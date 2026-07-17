@@ -25,14 +25,14 @@ jobs:
         echo "DB_PORT=5432" >> .env
 
     - name: Build and start containers
-      run: docker-compose up --build -d
+      run: docker compose up --build -d
 
     - name: Wait for database to be ready
       run: sleep 10
 
     - name: Run automated tests
-      run: docker-compose exec -T web python src/manage.py test consultas
+      run: docker compose exec -T web python src/manage.py test consultas
 
     - name: Shutdown containers
       if: always()
-      run: docker-compose down
+      run: docker compose down
