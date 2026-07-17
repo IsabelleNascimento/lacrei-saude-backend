@@ -7,17 +7,15 @@ class ProfissionalAPITestCase(APITestCase):
 
     def setUp(self):
         """
-        Criar dados iniciais no banco de dados de teste isolado.
+        Roda antes de cada teste, inserindo um profissional com os campos 
+        reais do modelo para servir de base no banco temporário.
         """
         self.profissional_teste = Profissional.objects.create(
-            nome="Dra. Roberta Silva",
-            especialidade="Cardiologia",
-            crm="123456/SP",
-            telefone="11999998888",
-            email="roberta.silva@email.com",
-            ativo=True
+            nome_social="Dra. Roberta Silva",
+            profissao="Cardiologia",
+            endereco="Av. Paulista, 1000",
+            contato="11999998888"
         )
-        # Caminho da URL de listagem de profissionais
         self.url_listagem = reverse('profissional-list')
 
     def test_listar_profissionais(self):
@@ -26,17 +24,15 @@ class ProfissionalAPITestCase(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['nome'], "Dra. Roberta Silva")
+        self.assertEqual(response.data[0]['nome_social'], "Dra. Roberta Silva")
 
     def test_criar_profissional_valido(self):
-        """Garante que a API consegue cadastrar um novo profissional com dados válidos"""
+        """Garante que a API cadastra um profissional com os campos corretos"""
         dados_novo_profissional = {
-            "nome": "Dr. Marcos Souza",
-            "especialidade": "Pediatria",
-            "crm": "654321/SP",
-            "telefone": "11988887777",
-            "email": "marcos.souza@email.com",
-            "ativo": True
+            "nome_social": "Dr. Marcos Souza",
+            "profissao": "Pediatria",
+            "endereco": "Rua das Flores, 123",
+            "contato": "11988887777"
         }
         
         response = self.client.post(self.url_listagem, dados_novo_profissional, format='json')
