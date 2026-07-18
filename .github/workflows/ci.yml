@@ -27,9 +27,6 @@ jobs:
     - name: Build and start containers
       run: docker compose up --build -d
 
-    - name: Install dependencies inside container
-      run: docker compose exec -T web poetry install --no-interaction --no-root
-
     - name: Wait for database to be ready
       run: sleep 10
 

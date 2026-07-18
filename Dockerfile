@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y libpq-dev gcc
 
 RUN pip install poetry
 
-COPY pyproject.toml ./
+COPY pyproject.toml poetry.lock* ./
 
 RUN poetry config virtualenvs.create false && poetry install --no-root --no-interaction --no-ansi --no-plugins
 
