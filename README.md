@@ -99,3 +99,18 @@ docker compose exec web python manage.py test
 * **Integração Contínua (CI):** Este repositório conta com uma esteira automatizada via **GitHub Actions** que executa os testes a cada *push* ou *pull request* na branch `main`, garantindo a estabilidade e integridade do código antes de qualquer deploy.
 
 ```
+## 🔐 Autenticação
+
+A API utiliza autenticação via **Token (DRF TokenAuthentication)**. Todas as rotas exigem o header:
+
+Authorization: Token <seu_token>
+
+### Como obter um token
+
+1. Crie um usuário: `docker compose exec web python src/manage.py createsuperuser`
+2. Solicite o token:
+```bash
+   curl -X POST http://localhost:8000/api/token/ \
+     -H "Content-Type: application/json" \
+     -d '{"username": "lacrei", "password": "marola.12"}'
+```
