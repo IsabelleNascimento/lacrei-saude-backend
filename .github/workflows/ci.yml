@@ -10,35 +10,35 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-  steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-  - name: Create .env file for testing
-    run: |
-      echo "DEBUG=True" >> .env
-      echo "SECRET_KEY=django-insecure-ci-test-key-github-actions" >> .env
-      echo "DB_NAME=myapp" >> .env
-      echo "DB_USER=user" >> .env
-      echo "DB_PASSWORD=password" >> .env
-      echo "DB_HOST=db" >> .env
-      echo "DB_PORT=5432" >> .env
+    - name: Create .env file for testing
+      run: |
+        echo "DEBUG=True" >> .env
+        echo "SECRET_KEY=django-insecure-ci-test-key-github-actions" >> .env
+        echo "DB_NAME=myapp" >> .env
+        echo "DB_USER=user" >> .env
+        echo "DB_PASSWORD=password" >> .env
+        echo "DB_HOST=db" >> .env
+        echo "DB_PORT=5432" >> .env
 
-  - name: Build and start containers
-    run: docker compose up --build -d
+    - name: Build and start containers
+      run: docker compose up --build -d
 
-  - name: Install dependencies inside container
-    run: docker compose exec -T web poetry install --no-interaction --no-root
+    - name: Install dependencies inside container
+      run: docker compose exec -T web poetry install --no-interaction --no-root
 
-  - name: Wait for database to be ready
-    run: sleep 10
+    - name: Wait for database to be ready
+      run: sleep 10
 
-  - name: Run database migrations
-    run: docker compose exec -T web python src/manage.py migrate
+    - name: Run database migrations
+      run: docker compose exec -T web python src/manage.py migrate
 
-  - name: Run automated tests
-    run: docker compose exec -T web python src/manage.py test consultas
+    - name: Run automated tests
+      run: docker compose exec -T web python src/manage.py test consultas
 
-  - name: Shutdown containers
-    if: always()
-    run: docker compose down
+    - name: Shutdown containers
+      if: always()
+      run: docker compose down
