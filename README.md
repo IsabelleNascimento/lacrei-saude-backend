@@ -126,6 +126,11 @@ A cobertura atual inclui: listagem e criação de Profissionais, e validação d
 
 > Todas as rotas acima (exceto `/api/token/`) exigem o header `Authorization: Token <token>`.
 
+## 📄 Documentação Interativa
+
+Com o projeto rodando localmente, acesse:
+- Swagger UI: http://localhost:8000/api/docs/
+- Redoc: http://localhost:8000/api/redoc/
 ---
 
 ## 🛠️ Detalhes de Implementação e Justificativas Técnicas
