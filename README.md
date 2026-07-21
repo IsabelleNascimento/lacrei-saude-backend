@@ -146,14 +146,73 @@ Com o projeto rodando localmente, acesse:
 
 ## 🔄 Proposta de Rollback
 
-Em caso de falha identificada após um deploy em produção, a estratégia proposta é a seguinte:
+A estratégia de rollback deste projeto é organizada em camadas, da mais rápida/simples para a mais robusta, dependendo da gravidade da falha identificada após um deploy.
 
-1. **Versionamento de imagens Docker:** cada deploy gera uma imagem Docker taggeada com o hash do commit (ex: `lacrei-backend:a1b2c3d`), publicada em um registry (ex: Amazon ECR). Isso permite identificar exatamente qual versão está rodando em produção a qualquer momento.
-2. **Rollback via redeploy da imagem anterior:** caso a nova versão apresente falhas, o rollback consiste em reimplantar a última tag estável conhecida, sem precisar reverter código ou rebuildar — apenas apontar o serviço (ex: ECS/EC2) de volta para a imagem anterior. Isso reduz o tempo de recuperação (MTTR) para minutos.
-3. **Revert no GitHub Actions:** como alternativa/complemento, o próprio workflow de CI/CD permite re-executar o job de deploy apontando para um commit anterior estável (`git revert` do commit problemático + novo push), disparando automaticamente um novo pipeline de build e deploy com o código revertido.
-4. **Estratégia Blue/Green (evolução futura):** para minimizar o tempo de indisponibilidade durante o rollback, o ideal seria manter dois ambientes espelhados (blue/green), alternando o tráfego entre eles via load balancer — permitindo reverter instantaneamente sem downtime, apenas trocando qual ambiente recebe as requisições.
-5. **Migrações de banco de dados:** como rollback de código nem sempre é compatível com migrações já aplicadas, a prática recomendada é escrever migrações reversíveis (`migration.RunPython` com função `reverse_code`) sempre que uma alteração de schema não for puramente aditiva, permitindo `python manage.py migrate consultas <migração_anterior>` com segurança.
+### 1. Rollback rápido via revert de commit (camada imediata)
 
+Se um problema for identificado logo após o merge na branch `main`, a forma mais rápida de reverter é desfazer o commit problemático e deixar o próprio pipeline de CI/CD reconstruir e reimplantar a versão anterior automaticamente:
+
+```bash
+git revert <hash-do-commit-problematico>
+git push origin main
+```
+
+Isso dispara o workflow do GitHub Actions normalmente (lint → build/test → deploy), publicando a versão anterior sem intervenção manual em infraestrutura.
+
+**Quando usar:** falhas identificadas minutos após o deploy, com causa raiz clara no último commit.
+
+### 2. Rollback via imagem Docker versionada (camada de infraestrutura)
+
+Cada deploy realizado pelo pipeline gera uma imagem Docker taggeada com o hash curto do commit (ex: `lacrei-backend:a1b2c3d`), publicada em um registry (Amazon ECR). Isso significa que toda versão já implantada continua disponível e pronta para reuso.
+
+Em caso de falha que não possa esperar um novo ciclo de CI/CD, o rollback consiste em reimplantar diretamente a última imagem estável, sem rebuildar:
+
+```bash
+# Exemplo de rollback manual via AWS CLI, apontando o serviço para a imagem anterior
+aws ecs update-service \
+  --cluster lacrei-saude-cluster \
+  --service lacrei-saude-backend \
+  --task-definition lacrei-saude-backend:<revisao-estavel-anterior> \
+  --force-new-deployment
+```
+
+**Quando usar:** falhas críticas em produção, quando cada minuto de indisponibilidade importa e não há tempo de esperar um novo build completo.
+
+### 3. Rollback de migrações de banco de dados
+
+Rollback de código nem sempre é compatível com migrações de banco já aplicadas. Por isso, toda migração que não for puramente aditiva (ex: remoção de coluna, alteração de tipo) deve ser escrita de forma reversível, com `reverse_code` definido:
+
+```python
+def reverse_func(apps, schema_editor):
+    # lógica para desfazer a alteração
+    ...
+
+class Migration(migrations.Migration):
+    operations = [
+        migrations.RunPython(forward_func, reverse_func),
+    ]
+```
+
+Para reverter uma migração específica já aplicada:
+
+```bash
+docker compose exec web python src/manage.py migrate consultas <nome_da_migracao_anterior>
+```
+
+**Quando usar:** sempre que o rollback de código envolver reverter também uma alteração de schema do banco.
+
+### 4. Evolução futura: Deploy Blue/Green
+
+Para eliminar downtime durante o rollback, a evolução natural seria manter dois ambientes espelhados (blue/green) atrás de um load balancer, alternando o tráfego entre eles. Um rollback se tornaria apenas uma troca de roteamento — instantânea, sem precisar reimplantar nada. Essa abordagem não foi implementada nesta entrega por limitação de tempo, mas é a próxima evolução natural da estratégia de deploy deste projeto.
+
+### Resumo de decisão
+
+| Cenário | Estratégia recomendada |
+| --- | --- |
+| Bug identificado minutos após o merge | Revert de commit (camada 1) |
+| Indisponibilidade crítica em produção | Reimplantar imagem anterior (camada 2) |
+| Rollback envolve mudança de schema no banco | Migração reversível (camada 3) |
+| Necessidade de rollback sem downtime | Blue/Green (evolução futura) |
 ---
 
 ## 📌 Erros Encontrados e Melhorias Futuras
