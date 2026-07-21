@@ -183,7 +183,7 @@ class ConsultaAPITestCase(APITestCase):
         self.assertEqual(Consulta.objects.count(), 0)
 
     def test_buscar_consultas_por_profissional(self):
-        """Garante que o filtro por profissional_id retorna apenas as consultas daquele profissional"""
+        """Garante que o filtro por profissional_id retorna só as consultas do profissional"""
         Consulta.objects.create(
             data="2026-09-05T11:00:00Z",
             profissional=self.outro_profissional

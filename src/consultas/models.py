@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class Profissional(models.Model):
     nome_social = models.CharField(max_length=255)
     profissao = models.CharField(max_length=100)
@@ -13,12 +12,15 @@ class Profissional(models.Model):
 
 class Consulta(models.Model):
     data = models.DateTimeField()
-    
+
     profissional = models.ForeignKey(
-        Profissional, 
-        on_delete=models.CASCADE, 
+        Profissional,
+        on_delete=models.CASCADE,
         related_name='consultas'
     )
 
-    def __str__(self):
-        return f"Consulta em {self.data.strftime('%d/%m/%Y %H:%M')} com {self.profissional.nome_social}"
+def __str__(self):
+    return (
+        f"Consulta em {self.data.strftime('%d/%m/%Y %H:%M')} "
+        f"com {self.profissional.nome_social}"
+    )
