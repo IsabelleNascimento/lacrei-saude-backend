@@ -15,7 +15,7 @@ services:
   web:
     build: .
     container_name: lacrei-web-prod
-    command: gunicorn setup.wsgi:application --chdir src --bind 0.0.0.0:8000 --workers 3
+    command: gunicorn setup.wsgi:application --chdir src --bind 0.0.0.0:8000 --workers 3 --access-logfile - --error-logfile - --capture-output
     volumes:
       - .:/code
     ports:
