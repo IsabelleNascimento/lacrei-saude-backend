@@ -30,7 +30,7 @@ services:
       - app-network-prod
     restart: always
 
-web-staging:
+  web-staging:
     build: .
     container_name: lacrei-web-staging
     command: gunicorn setup.wsgi:application --chdir src --bind 0.0.0.0:8000 --workers 2 --access-logfile - --error-logfile - --capture-output
