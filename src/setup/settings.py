@@ -149,8 +149,10 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Lacrei Saúde - API de Gerenciamento de Consultas',
-    'DESCRIPTION': 'API RESTful para cadastro de profissionais de saúde'
-    'e agendamento de consultas médicas.',
+    'DESCRIPTION': (
+        'API RESTful para cadastro de profissionais de saúde '
+        'e agendamento de consultas médicas.'
+    ),
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
