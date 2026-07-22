@@ -133,6 +133,46 @@ Com o projeto rodando localmente, acesse:
 - Redoc: http://localhost:8000/api/redoc/
 ---
 
+## 🌐 Deploy (Staging e Produção)
+
+A aplicação está implantada na AWS, em uma instância **EC2 (Ubuntu 24.04, t3.micro — Free Tier)**, rodando os containers via Docker Compose. Os ambientes de staging e produção rodam na mesma instância, compartilhando o mesmo servidor PostgreSQL, mas com **bancos de dados isolados** (`lacrei_producao` e `staging_db`) e arquivos de variáveis de ambiente separados (`.env` e `.env.staging`).
+
+### Ambientes disponíveis
+
+| Ambiente | URL Base | Documentação Swagger |
+| --- | --- | --- |
+| **Produção** | `http://98.91.212.163:8001/` | `http://98.91.212.163:8001/api/docs/` |
+| **Staging** | `http://98.91.212.163:8000/` | `http://98.91.212.163:8000/api/docs/` |
+
+> ⚠️ Instância mantida no nível gratuito (Free Tier) da AWS para fins de avaliação deste desafio técnico. Pode ser desligada após o período de avaliação.
+
+### Arquitetura do deploy
+
+* **Servidor:** 1 instância EC2 (`t3.micro`), rodando Ubuntu 24.04 com Docker e Docker Compose instalados manualmente.
+* **Servidor de aplicação:** Gunicorn (WSGI), com múltiplos workers, substituindo o `runserver` (usado apenas em desenvolvimento).
+* **Banco de dados:** 1 container PostgreSQL 15 compartilhado, com bancos lógicos separados por ambiente.
+* **Arquivo de configuração:** `docker-compose.prod.yml`, separado do `docker-compose.yml` usado em desenvolvimento local — evitando conflito entre as duas configurações.
+* **Logs:** habilitados via flags do Gunicorn (`--access-logfile`, `--error-logfile`), registrando todas as requisições e erros diretamente na saída padrão do container, acessíveis via `docker compose logs`.
+* **Segurança de rede:** Security Group da instância configurado para liberar apenas as portas necessárias (22 para SSH, 80 reservada para uso futuro com proxy reverso, 8000 e 8001 para staging e produção).
+* **Credenciais:** gerenciadas via arquivos `.env` e `.env.staging`, nunca versionados no Git (presentes no `.gitignore`), com `SECRET_KEY` e senha de banco distintas por ambiente.
+
+### Como o deploy foi realizado (passo a passo resumido)
+
+1. Criação de instância EC2 gratuita (Ubuntu 24.04, `t3.micro`) com par de chaves SSH.
+2. Configuração do Security Group liberando as portas necessárias.
+3. Conexão via SSH e instalação do Docker Engine + Docker Compose plugin.
+4. Clonagem do repositório diretamente na instância.
+5. Criação manual dos arquivos `.env` (produção) e `.env.staging`, com credenciais próprias de cada ambiente.
+6. Ajuste do `ALLOWED_HOSTS` no `settings.py` para ler da variável de ambiente, permitindo configurar por ambiente sem alterar código.
+7. Criação de um `docker-compose.prod.yml` específico, trocando o servidor de desenvolvimento (`runserver`) pelo **Gunicorn**.
+8. Build e subida dos containers (`docker compose -f docker-compose.prod.yml up --build -d`).
+9. Execução das migrações em cada ambiente separadamente.
+10. Validação end-to-end: autenticação via token, CRUD de profissionais e consultas, testados diretamente pela documentação Swagger publicada.
+
+### Deploy futuro via CI/CD (próxima evolução)
+
+Atualmente o deploy é realizado manualmente via SSH, o que foi uma escolha consciente dado o tempo disponível para o desafio. A evolução natural seria automatizar esse processo como uma etapa adicional (`Deploy`) no `ci.yml` do GitHub Actions, usando uma GitHub Action de SSH (ex: `appleboy/ssh-action`) para, a cada push na `main`, conectar na instância, executar `git pull` e recriar os containers automaticamente — eliminando a necessidade de intervenção manual a cada nova versão.
+
 ## 🛠️ Detalhes de Implementação e Justificativas Técnicas
 
 * **Segurança de Variáveis:** o projeto utiliza `python-dotenv` para carregar credenciais e chaves sensíveis a partir de um arquivo `.env`, nunca expostas diretamente no código-fonte. O `.env.example` documenta as variáveis necessárias sem expor valores reais.
